@@ -6,8 +6,9 @@ if (typeof(TIMEOUT_OVERRIDE) != 'undefined') {
 GLOBAL_TIMEOUT = TIMEOUT + 2000;  // In milliseconds.
 setup({timeout: GLOBAL_TIMEOUT});
 var onstarted = false;
-var neverFireTest = async_test('Events that should not fire');
-var onstartTest = async_test('onstart');
+var neverFireTest = async_test('Events that should not fire',
+                               {timeout: TIMEOUT});
+var onstartTest = async_test('onstart', {timeout: TIMEOUT});
 var reco = new SpeechRecognition();
 
 reco.onstart = onstartTest.step_func(function(event) {
@@ -40,7 +41,7 @@ function CountTest(name, min, max) {
   this.min = min;
   this.max = max;
   this.sum = 0;
-  this.asyncTest = async_test(name);
+  this.asyncTest = async_test(name, {timeout: TIMEOUT});
 
   this.count = function(increment) { this.sum += increment; };
 
@@ -76,7 +77,7 @@ function CycleTest(name) {
   this.name = name;
   this.count = 0;  // Counts number of start / end cycles.
   this.started = false; // Tracks whether last event was a start or end event.
-  this.test = async_test(name + ' start/stop');
+  this.test = async_test(name + ' start/stop', {timeout: TIMEOUT});
 
   this.startEvent = function() {
     var cycle = this;
