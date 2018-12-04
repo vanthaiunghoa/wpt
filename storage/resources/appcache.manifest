@@ -1,0 +1,6 @@
+CACHE MANIFEST
+
+appcache.py?type=cached
+
+FALLBACK:
+appcache.py?type=fallingback appcache.py?type=fallbacked
