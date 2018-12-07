@@ -1,5 +1,6 @@
 // META: script=/service-workers/service-worker/resources/test-helpers.sub.js
 // META: script=resources/utils.js
+
 'use strict';
 
 // Covers basic functionality provided by BackgroundFetchManager.fetch().
@@ -74,7 +75,8 @@ backgroundFetchTest(async (test, backgroundFetch) => {
 
   assert_equals(registration.id, registrationId);
 
-  const {type, eventRegistration, results} = await getMessageFromServiceWorker();
+  const {type, eventRegistration, results} =
+    await getMessageFromServiceWorker();
 
   assert_equals('backgroundfetchsuccess', type);
   assert_equals(eventRegistration.result, 'success');
@@ -92,7 +94,8 @@ backgroundFetchTest(async (test, backgroundFetch) => {
 
   assert_equals(registration.id, registrationId);
 
-  const {type, eventRegistration, results} = await getMessageFromServiceWorker();
+  const {type, eventRegistration, results} =
+    await getMessageFromServiceWorker();
 
   assert_equals(type, 'backgroundfetchsuccess');
   assert_equals(eventRegistration.result, 'success');
@@ -110,7 +113,8 @@ backgroundFetchTest(async (test, backgroundFetch) => {
 
   assert_equals(registration.id, registrationId);
 
-  const {type, eventRegistration, results} = await getMessageFromServiceWorker();
+  const {type, eventRegistration, results} =
+    await getMessageFromServiceWorker();
 
   assert_equals(type, 'backgroundfetchsuccess');
   assert_equals(eventRegistration.result, 'success');
@@ -131,7 +135,8 @@ backgroundFetchTest(async (test, backgroundFetch) => {
   assert_true(registration.recordsAvailable);
   // Skip `downloaded`, as the transfer may have started already.
 
-  const {type, eventRegistration, results} = await getMessageFromServiceWorker();
+  const {type, eventRegistration, results} =
+    await getMessageFromServiceWorker();
   assert_equals('backgroundfetchsuccess', type);
   assert_equals(results.length, 1);
 
@@ -324,3 +329,52 @@ backgroundFetchTest(async (test, backgroundFetch) => {
   assert_equals(results[1].text, 'Background Fetch');
 
 }, 'Matching multiple times on the same request works as expected.');
+
+backgroundFetchTest(async (test, backgroundFetch) => {
+  if (!internals.runtimeFlags.backgroundFetchAccessActiveFetchesEnabled)
+    return Promise.resolve();
+
+  const registration = await backgroundFetch.fetch(
+      uniqueId(),
+      ['resources/feature-name.txt', '/serviceworker/resources/slow-response.php']);
+
+  const record = await registration.match('resources/feature-name.txt');
+
+  await new Promise(resolve => {
+  const expectedResultText = 'Background Fetch';
+
+  registration.onprogress = async event => {
+    if (event.target.downloaded < expectedResultText.length)
+      return;
+
+    const response = await record.responseReady();
+
+    assert_true(response.url.includes('resources/feature-name.txt'));
+    const completedResponseText = await response.text();
+    assert_equals(completedResponseText, expectedResultText);
+
+    resolve();
+  };
+});
+
+}, 'Access to active fetches is supported.');
+
+backgroundFetchTest(async (test, backgroundFetch) => {
+  if (!internals.runtimeFlags.backgroundFetchAccessActiveFetchesEnabled)
+    return Promise.resolve();
+
+  const registration = await backgroundFetch.fetch(
+      uniqueId(),
+      ['resources/feature-name.txt', '/serviceworker/resources/slow-response.php']);
+
+  var responseReady;
+
+  {
+    const record = await registration.match('/serviceworker/resources/slow-response.php');
+    responseReady = record.responseReady;
+  }
+
+  const response = await responseReady;
+  assert_true(response.url.includes('/serviceworker/resources/slow-response.php'));
+
+}, 'responseReady resolves even after record goes out of scope.');
